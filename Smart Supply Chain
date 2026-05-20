@@ -1,0 +1,203 @@
+import pandas as pd
+import numpy as np
+
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_absolute_error
+
+# =========================================================
+# AI SUPPLY CHAIN RISK & DEMAND FORECASTING PLATFORM
+# =========================================================
+
+# Simulated enterprise supply chain dataset
+np.random.seed(42)
+
+products = [
+    "Laptop", "Phone", "Tablet", "Monitor",
+    "Keyboard", "Mouse", "Printer", "Camera",
+    "Speaker", "Smartwatch"
+]
+
+months = pd.date_range(
+    start="2025-01-01",
+    periods=120,
+    freq="D"
+)
+
+dataset = []
+
+for date in months:
+    for product in products:
+
+        marketing = np.random.randint(1000, 5000)
+        inventory = np.random.randint(50, 500)
+        shipping_delay = np.random.randint(0, 10)
+        supplier_risk = np.random.randint(1, 6)
+        seasonality = np.random.randint(1, 5)
+
+        demand = (
+            marketing * 0.8 +
+            inventory * 1.5 -
+            shipping_delay * 120 -
+            supplier_risk * 200 +
+            seasonality * 300 +
+            np.random.normal(0, 500)
+        )
+
+        dataset.append([
+            date,
+            product,
+            marketing,
+            inventory,
+            shipping_delay,
+            supplier_risk,
+            seasonality,
+            round(demand)
+        ])
+
+# Create DataFrame
+df = pd.DataFrame(dataset, columns=[
+    "Date",
+    "Product",
+    "Marketing_Budget",
+    "Inventory_Level",
+    "Shipping_Delay_Days",
+    "Supplier_Risk_Score",
+    "Seasonality_Index",
+    "Demand"
+])
+
+# =========================================================
+# Feature Engineering
+# =========================================================
+
+df["Month"] = df["Date"].dt.month
+df["DayOfWeek"] = df["Date"].dt.dayofweek
+
+# Convert categorical feature
+df_encoded = pd.get_dummies(
+    df,
+    columns=["Product"],
+    drop_first=True
+)
+
+# =========================================================
+# Machine Learning Pipeline
+# =========================================================
+
+X = df_encoded.drop(columns=["Date", "Demand"])
+y = df_encoded["Demand"]
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X,
+    y,
+    test_size=0.2,
+    random_state=42
+)
+
+model = RandomForestRegressor(
+    n_estimators=200,
+    max_depth=10,
+    random_state=42
+)
+
+model.fit(X_train, y_train)
+
+# Predictions
+predictions = model.predict(X_test)
+
+# Model Evaluation
+mae = mean_absolute_error(y_test, predictions)
+
+# =========================================================
+# Predict Future Demand
+# =========================================================
+
+future_input = pd.DataFrame({
+    "Marketing_Budget": [4200],
+    "Inventory_Level": [320],
+    "Shipping_Delay_Days": [2],
+    "Supplier_Risk_Score": [2],
+    "Seasonality_Index": [4],
+    "Month": [8],
+    "DayOfWeek": [3]
+})
+
+# Add missing dummy columns
+for col in X.columns:
+    if col not in future_input.columns:
+        future_input[col] = 0
+
+future_input = future_input[X.columns]
+
+future_prediction = model.predict(future_input)[0]
+
+# =========================================================
+# Supply Chain Risk Analysis
+# =========================================================
+
+high_risk_suppliers = df[
+    df["Supplier_Risk_Score"] >= 4
+]
+
+average_delay = df["Shipping_Delay_Days"].mean()
+
+# =========================================================
+# AI Executive Dashboard
+# =========================================================
+
+print("\nAI SUPPLY CHAIN INTELLIGENCE PLATFORM")
+print("=" * 70)
+
+print("\nDataset Overview")
+print("-" * 70)
+
+print(df.head())
+
+print("\nOperational KPIs")
+print("-" * 70)
+
+print(f"Total Records: {len(df):,}")
+print(f"Average Shipping Delay: {average_delay:.2f} days")
+print(f"High Risk Supplier Cases: {len(high_risk_suppliers)}")
+
+print("\nModel Performance")
+print("-" * 70)
+
+print(f"Mean Absolute Error: {mae:,.2f}")
+
+print("\nAI Demand Forecast")
+print("-" * 70)
+
+print(f"Predicted Future Demand: {future_prediction:,.0f} units")
+
+print("\nStrategic AI Insights")
+print("-" * 70)
+
+if average_delay > 5:
+    print("- Logistics performance requires optimization.")
+
+if len(high_risk_suppliers) > 100:
+    print("- Supplier diversification is recommended.")
+
+if future_prediction > 4000:
+    print("- Increase inventory allocation for forecasted demand surge.")
+
+# =========================================================
+# Feature Importance Analysis
+# =========================================================
+
+importance_df = pd.DataFrame({
+    "Feature": X.columns,
+    "Importance": model.feature_importances_
+})
+
+importance_df = importance_df.sort_values(
+    by="Importance",
+    ascending=False
+)
+
+print("\nTop Predictive Business Drivers")
+print("-" * 70)
+
+print(importance_df.head(10))
